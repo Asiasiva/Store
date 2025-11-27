@@ -1,9 +1,12 @@
+/body>
+</html>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sweet Temptations POS - Local Storage</title>
+    <title>அங்கக பேக்கரி பில்லிங் (POS)</title>
     
     <style>
         /* --- Self-Contained CSS for Local Operation --- */
@@ -17,6 +20,7 @@
             --color-secondary-accent: #a87b5a; /* Warm Caramel Brown */
             --color-success: #48bb78; /* Green */
             --color-error: #ef4444; /* Red */
+            --color-expense: #f97316; /* Orange for expense */
         }
         body {
             font-family: Arial, sans-serif; /* Fallback to system font */
@@ -32,7 +36,7 @@
             width: 100%;
             max-width: 768px; /* Max width for content */
             padding: 8px; /* Reduced padding */
-            display: block; /* Ensure container is displayed */
+            display: block; 
         }
         header {
             width: 100%;
@@ -127,6 +131,10 @@
             background-color: var(--color-success);
             color: white;
         }
+        .action-btn-expense {
+            background-color: var(--color-expense);
+            color: white;
+        }
 
         /* Quick Button Grid */
         #quick-buttons-container {
@@ -180,13 +188,30 @@
             display: flex;
             gap: 12px;
         }
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], .radio-group {
             width: 100%;
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 6px;
             box-sizing: border-box;
         }
+        .radio-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        .radio-group label {
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .radio-group input[type="radio"] {
+            margin-right: 4px;
+            width: auto;
+        }
+
 
         /* Cart List Styling */
         #cart-items-list {
@@ -194,7 +219,7 @@
             max-height: 400px;
             overflow-y: auto;
             margin-bottom: 16px;
-            display: block; /* Ensure cart list is displayed */
+            display: block; 
         }
         #cart-items-list > div {
             display: flex;
@@ -204,7 +229,15 @@
             border-radius: 6px;
             margin-bottom: 8px;
             font-size: 14px;
+            border-left: 5px solid;
         }
+        .item-income {
+            border-left-color: var(--color-success);
+        }
+        .item-expense {
+            border-left-color: var(--color-expense);
+        }
+
         .cart-total {
             display: flex;
             justify-content: space-between;
@@ -255,43 +288,37 @@
             color: #555;
         }
 
-        /* Print Specific CSS */
-        @media print {
-            body { background-color: white; }
-            header, main, .modal-overlay, #custom-message-box {
-                display: none !important;
-            }
-            #receipt-content {
-                display: block !important;
-                width: 300px; 
-                margin: 0 auto;
-                padding: 10px;
-                font-family: monospace;
-                font-size: 10px;
-            }
-            #receipt-content .receipt-header, 
-            #receipt-content .receipt-footer {
-                text-align: center;
-                margin-bottom: 5px;
-            }
-            #receipt-content .receipt-divider {
-                border-top: 1px dashed black;
-                margin: 5px 0;
-            }
-            #receipt-content .receipt-item {
-                display: flex;
-                justify-content: space-between;
-            }
-            #receipt-content .receipt-total {
-                font-size: 12px;
-                font-weight: bold;
-            }
+        /* --- Receipt Styles for iFrame Print Job --- */
+        .receipt-style {
+            font-family: monospace;
+            font-size: 10px;
+            color: black;
+            width: 300px; 
+            padding: 10px;
+        }
+        .receipt-style .receipt-header, 
+        .receipt-style .receipt-footer {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .receipt-style .receipt-divider {
+            border-top: 1px dashed black;
+            margin: 5px 0;
+        }
+        .receipt-style .receipt-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        .receipt-style .receipt-total {
+            font-size: 12px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <!-- This is the container for the main UI (hidden during print) -->
+    <div class="container"> 
 
         <!-- Header -->
         <header>
@@ -315,7 +342,7 @@
                         </svg>
                     </button>
                 </div>
-                <!-- Initial text to ensure the element exists before JS runs -->
+                <!-- Date Display: CRITICAL FIX 1 - Inline script to force immediate update -->
                 <div id="datetime-display" class="date-display">Loading Date...</div> 
             </div>
             
@@ -351,19 +378,29 @@
                         <div class="form-row">
                             <!-- Product Name Input with Datalist -->
                             <div style="flex-grow: 1;">
-                                <label for="product-name" style="font-size: 12px; font-weight: 500; color: #555; display: block; margin-bottom: 4px;">Product Name</label>
-                                <input type="text" id="product-name" list="default-products" placeholder="e.g., Croissant, Tea" required>
+                                <label for="product-name" style="font-size: 12px; font-weight: 500; color: #555; display: block; margin-bottom: 4px;">Product Name / Description</label>
+                                <input type="text" id="product-name" list="default-products" placeholder="e.g., Croissant, Rent, Supplies" required>
                                 <datalist id="default-products"></datalist>
                             </div>
                             
                             <!-- Price Input -->
                             <div style="width: 30%;">
-                                <label for="product-price" style="font-size: 12px; font-weight: 500; color: #555; display: block; margin-bottom: 4px;">Price (â‚¹)</label>
+                                <label for="product-price" style="font-size: 12px; font-weight: 500; color: #555; display: block; margin-bottom: 4px;">Amount (₹)</label>
                                 <input type="number" id="product-price" placeholder="0.00" step="0.01" min="0.01" required>
                             </div>
                         </div>
+                        
+                        <!-- Revenue/Expense Selector -->
+                        <div class="form-group">
+                            <label style="font-size: 12px; font-weight: 500; color: #555; display: block; margin-bottom: 4px;">Type</label>
+                            <div class="radio-group" id="type-selector">
+                                <label><input type="radio" name="type" value="income" checked> Revenue</label>
+                                <label><input type="radio" name="type" value="expense"> Expense</label>
+                            </div>
+                        </div>
+
                         <button type="submit" class="action-btn-secondary" style="padding: 12px;">
-                            Add Custom Item to Order
+                            Add Item to Order
                         </button>
                     </form>
                 </div>
@@ -386,7 +423,7 @@
                     <!-- Total -->
                     <div class="cart-total">
                         <span>TOTAL:</span>
-                        <span id="cart-total-display" style="color: var(--color-accent);">â‚¹0.00</span>
+                        <span id="cart-total-display" style="color: var(--color-accent);">₹0.00</span>
                     </div>
                     
                     <!-- Action Buttons (Complete & Clear) -->
@@ -401,7 +438,7 @@
         </main>
     </div>
 
-    <!-- Hidden element for print content generation -->
+    <!-- Hidden element for print content generation (used to hold content before iFrame printing) -->
     <div id="receipt-content" style="display: none;"></div>
 
 
@@ -412,13 +449,23 @@
                 <h3 style="font-size: 20px; font-weight: 700; color: var(--color-text-dark);">Manage Quick Menu Items</h3>
                 <button id="close-modal-btn" class="close-btn">&times;</button>
             </div>
+            
+            <!-- NEW: Menu Export/Import Section -->
+            <div style="border: 1px dashed #ccc; padding: 12px; border-radius: 8px; margin-bottom: 16px; background-color: #f0f0f0;">
+                <h4 style="font-size: 14px; font-weight: 700; color: #333; margin-bottom: 8px;">Share Menu Across Devices</h4>
+                <button id="export-menu-btn" class="action-btn-secondary" style="width: 100%; margin-bottom: 8px; background-color: #555;">Export Menu Code (Copy)</button>
+                
+                <textarea id="import-menu-input" placeholder="Paste menu code here to import..." style="width: 100%; height: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; resize: none;"></textarea>
+                <button id="import-menu-btn" class="action-btn-success" style="width: 100%; margin-top: 8px;">Import Menu Code (Overwrite)</button>
+            </div>
+
 
             <!-- Add/Edit Form -->
             <form id="menu-item-form" style="display: flex; flex-direction: column; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #eee;">
                 <input type="hidden" id="item-index-to-edit">
-                <input type="text" id="item-name" placeholder="Name (e.g., Croissant)" required>
+                <input type="text" id="item-name" placeholder="Name (e.g., Tea)" required>
                 <input type="number" id="item-price" placeholder="Price (e.g., 12.50)" step="0.01" min="0.01" required>
-                <input type="text" id="item-icon" placeholder="Emoji Icon (e.g., ðŸ¥)">
+                <input type="text" id="item-icon" placeholder="Emoji Icon (e.g., ☕)">
                 
                 <button type="submit" id="form-submit-btn" class="action-btn-success" style="padding: 10px;">
                     Add New Item
@@ -470,12 +517,12 @@
         let currentCart = { items: [], total: 0 };
         let orderHistory = []; 
 
-        // --- Core Data ---
+        // --- Core Data: CONTAINS TAMIL NAMES TO AVOID FONT ISSUES ---
         const INITIAL_PRODUCT_DATA = [
-            { name: "Tea", price: 15.00, icon: 'â˜•' },
-            { name: "Coffee", price: 20.00, icon: 'ðŸµ' },
-            { name: "Snacks", price: 10.00, icon: 'ðŸª' },
-            { name: "Snacks 1", price: 15.00, icon: 'ðŸ©' },
+            { name: "டீ", price: 15.00, icon: '☕', type: 'income' },
+            { name: "காபி", price: 20.00, icon: '🍵', type: 'income' },
+            { name: "ஸ்நாக்ஸ்", price: 10.00, icon: '🍪', type: 'income' },
+            { name: "ஸ்நாக்ஸ் 1", price: 15.00, icon: '🍩', type: 'income' },
         ];
         
         // --- Title Management ---
@@ -524,11 +571,20 @@
         function updateDateTime() {
             const now = new Date();
             const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-            const dateStr = now.toLocaleDateString(undefined, dateOptions);
-            
-            const display = document.getElementById('datetime-display');
-            if (display) {
-                display.textContent = dateStr;
+            try {
+                // Try the standard way
+                const dateStr = now.toLocaleDateString(undefined, dateOptions);
+                const display = document.getElementById('datetime-display');
+                if (display) {
+                    display.textContent = dateStr;
+                }
+            } catch (e) {
+                // Fallback for extremely minimal environments
+                const fallbackDate = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+                 const display = document.getElementById('datetime-display');
+                 if (display) {
+                    display.textContent = fallbackDate;
+                }
             }
         }
         
@@ -538,10 +594,19 @@
             try {
                 const data = localStorage.getItem(key);
                 if (data) {
-                    return JSON.parse(data);
+                    const parsedData = JSON.parse(data);
+                    // Crucial safety check: Ensure the parsed data matches the expected type (array or object)
+                    if ((key === MENU_KEY || key === HISTORY_KEY) && !Array.isArray(parsedData)) {
+                         return defaultData;
+                    }
+                    if (key === CART_KEY && typeof parsedData !== 'object' || Array.isArray(parsedData)) {
+                         return defaultData;
+                    }
+                    return parsedData;
                 }
             } catch (e) {
-                console.error("Error reading from localStorage:", e);
+                // If parsing fails, return default data
+                return defaultData;
             }
             return defaultData;
         }
@@ -555,6 +620,7 @@
                     renderCart(currentCart);
                 } else if (key === MENU_KEY) {
                     quickMenuProducts = data;
+                    // Trigger all necessary updates after menu save
                     renderQuickButtons();
                     populateDatalist();
                     renderMenuManagementList();
@@ -591,18 +657,32 @@
         function saveOrderToHistory(cart) {
             if (cart.items.length === 0) return;
 
+            const now = new Date();
             const newRecord = {
-                id: Date.now(),
-                timestamp: new Date().toISOString(),
+                id: now.getTime(),
+                timestamp: now.toISOString(),
                 total: cart.total,
                 items: cart.items,
-                dateKey: new Date().toDateString() 
+                dateKey: now.toDateString() 
             };
             
             let history = loadData(HISTORY_KEY, []);
+            // Use unshift to add to the beginning (newest first)
             history.unshift(newRecord); 
             saveData(HISTORY_KEY, history);
         }
+        
+        function deleteHistoricalOrder(id) {
+            // Confirm deletion using native prompt since this is a destructive action
+            if (window.confirm("Are you sure you want to permanently delete this order record? This cannot be undone.")) {
+                // Ensure we are working with the latest orderHistory state after the user clicks confirm
+                orderHistory = orderHistory.filter(order => order.id !== id); 
+                saveData(HISTORY_KEY, orderHistory); // Save the filtered array back to storage
+                renderHistoryList(); // Re-render the history modal content
+                showTemporaryMessage("Order record deleted.");
+            }
+        }
+
 
         function setupHistoryModal() {
             const viewBtn = document.getElementById('view-history-btn');
@@ -646,6 +726,7 @@
                 dateGroup.style.padding = '12px';
                 dateGroup.style.borderRadius = '8px';
                 dateGroup.style.backgroundColor = '#f9f9f9';
+                dateGroup.style.marginBottom = '16px';
                 
                 const dateTitle = document.createElement('h4');
                 dateTitle.style.fontWeight = '700';
@@ -667,13 +748,21 @@
                     orderDiv.style.padding = '8px 0';
                     orderDiv.style.borderBottom = '1px dashed #eee';
                     
+                    // Calculate income and expense totals for this order
+                    const income = order.items.filter(i => i.type === 'income').reduce((sum, i) => sum + i.price, 0);
+                    const expense = order.items.filter(i => i.type === 'expense').reduce((sum, i) => sum + i.price, 0);
+
                     orderDiv.innerHTML = `
-                        <div style="font-size: 14px;">
+                        <div style="font-size: 14px; display: flex; flex-direction: column;">
                             <span style="font-weight: 500; color: #555;">${orderTime}</span>
-                            <span style="margin-left: 16px; font-weight: 700; font-size: 16px; color: var(--color-accent);">â‚¹${order.total.toFixed(2)}</span>
-                            <span style="color: #888; margin-left: 8px;">(${order.items.length} items)</span>
+                            <span style="font-weight: 700; font-size: 16px; color: var(--color-accent);">Net: ₹${order.total.toFixed(2)}</span>
+                            <span style="color: var(--color-success); font-size: 12px;">+₹${income.toFixed(2)} (R)</span>
+                            <span style="color: var(--color-expense); font-size: 12px;">-₹${expense.toFixed(2)} (E)</span>
                         </div>
-                        <button data-order-id="${order.id}" class="print-history-btn" style="padding: 6px 10px; font-size: 12px; font-weight: 600; border-radius: 4px; color: white; background-color: #3b82f6;">Print</button>
+                        <div style="display: flex; gap: 8px;">
+                            <button data-order-id="${order.id}" class="print-history-btn" style="padding: 6px 10px; font-size: 12px; font-weight: 600; border-radius: 4px; color: white; background-color: #3b82f6;">Print</button>
+                            <button data-order-id="${order.id}" class="delete-history-btn" style="padding: 6px 10px; font-size: 12px; font-weight: 600; border-radius: 4px; color: white; background-color: var(--color-error);">Delete</button>
+                        </div>
                     `;
                     dateGroup.appendChild(orderDiv);
                 });
@@ -681,6 +770,7 @@
                 container.appendChild(dateGroup);
             });
             
+            // Re-bind listeners after setting innerHTML
             container.querySelectorAll('.print-history-btn').forEach(btn => {
                 btn.onclick = (e) => {
                     const orderId = parseInt(e.currentTarget.dataset.orderId);
@@ -690,6 +780,13 @@
                     }
                 };
             });
+            container.querySelectorAll('.delete-history-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const orderId = parseInt(e.currentTarget.dataset.orderId);
+                    // This calls the function that handles confirmation and saving
+                    deleteHistoricalOrder(orderId);
+                };
+            });
         }
 
 
@@ -697,7 +794,15 @@
         
         function addItemToCart(newItem) {
             const updatedItems = [...currentCart.items, newItem];
-            const updatedTotal = updatedItems.reduce((sum, item) => sum + item.price, 0);
+            
+            // Calculate total based on item type (income adds, expense subtracts)
+            const updatedTotal = updatedItems.reduce((sum, item) => {
+                if (item.type === 'expense') {
+                    return sum - item.price;
+                } else {
+                    return sum + item.price;
+                }
+            }, 0);
 
             currentCart = {
                 items: updatedItems,
@@ -705,7 +810,8 @@
             };
             
             saveData(CART_KEY, currentCart);
-            showTemporaryMessage(`Added: ${newItem.name} (â‚¹${newItem.price.toFixed(2)})`);
+            const sign = newItem.type === 'expense' ? '-' : '+';
+            showTemporaryMessage(`Added: ${newItem.name} (${sign}₹${newItem.price.toFixed(2)})`);
         }
 
         function completeAndClearOrder() {
@@ -721,7 +827,7 @@
             currentCart = { items: [], total: 0 };
             saveData(CART_KEY, currentCart);
             
-            showTemporaryMessage(`Order completed! Total: â‚¹${total.toFixed(2)}. Cart cleared.`);
+            showTemporaryMessage(`Order completed! Net: ₹${total.toFixed(2)}. Cart cleared.`);
         }
 
         function renderCart(cart) {
@@ -743,11 +849,9 @@
                 completeBtn.disabled = false;
                 
                 const itemCounts = items.reduce((acc, item) => {
-                    const priceKey = item.price.toFixed(2);
-                    const key = `${item.name}-${priceKey}`;
-                    if (!acc[key]) {
-                        acc[key] = { count: 0, item: item };
-                    }
+                    // Use price and type in the key to group like items accurately
+                    const key = `${item.name}|${item.price.toFixed(2)}|${item.type}`;
+                    acc[key] = acc[key] || { count: 0, item: item };
                     acc[key].count++;
                     return acc;
                 }, {});
@@ -760,6 +864,8 @@
                     listItem.dataset.itemJson = JSON.stringify(item); 
                     listItem.dataset.count = count;
                     
+                    listItem.className = item.type === 'expense' ? 'item-expense' : 'item-income';
+
                     listItem.style.display = 'flex';
                     listItem.style.justifyContent = 'space-between';
                     listItem.style.padding = '8px';
@@ -772,13 +878,14 @@
                     nameSpan.style.overflow = 'hidden';
                     nameSpan.style.whiteSpace = 'nowrap';
                     nameSpan.style.textOverflow = 'ellipsis';
-                    nameSpan.textContent = `${item.name} (x${count})`;
+                    const sign = item.type === 'expense' ? '-' : '+';
+                    nameSpan.textContent = `${sign} ${item.name} (x${count})`;
 
                     const priceSpan = document.createElement('span');
                     priceSpan.style.fontWeight = '700';
                     priceSpan.style.textAlign = 'right';
-                    priceSpan.style.color = 'var(--color-text-dark)';
-                    priceSpan.textContent = `â‚¹${(item.price * count).toFixed(2)}`;
+                    priceSpan.style.color = item.type === 'expense' ? 'var(--color-expense)' : 'var(--color-text-dark)';
+                    priceSpan.textContent = `₹${(item.price * count).toFixed(2)}`;
 
                     listItem.appendChild(nameSpan);
                     listItem.appendChild(priceSpan);
@@ -786,7 +893,8 @@
                 });
             }
 
-            totalDisplay.textContent = `â‚¹${total.toFixed(2)}`;
+            totalDisplay.textContent = `₹${total.toFixed(2)}`;
+            totalDisplay.style.color = total >= 0 ? 'var(--color-success)' : 'var(--color-error)';
         }
 
         // --- Print Functionality (Current Cart or History) ---
@@ -796,39 +904,53 @@
             const date = new Date(order.timestamp).toLocaleString();
             
             const groupedItems = order.items.reduce((acc, item) => {
-                const key = `${item.name}|${item.price.toFixed(2)}`;
-                acc[key] = acc[key] || { count: 0, name: item.name, price: item.price };
+                const key = `${item.name}|${item.price.toFixed(2)}|${item.type}`;
+                acc[key] = acc[key] || { count: 0, name: item.name, price: item.price, type: item.type };
                 acc[key].count++;
                 return acc;
             }, {});
             
-            let itemsHtml = Object.values(groupedItems).map(group => `
-                <div class="receipt-item">
-                    <span>${group.count} x ${group.name}</span>
-                    <span>â‚¹${(group.price * group.count).toFixed(2)}</span>
-                </div>
-            `).join('');
+            let itemsHtml = Object.values(groupedItems).map(group => {
+                const typeText = group.type === 'expense' ? ' (செலவு)' : ' (வருவாய்)';
+                const sign = group.type === 'expense' ? '(-)' : '(+)';
+                return `
+                    <div class="receipt-item">
+                        <span>${group.count} x ${group.name} ${sign}</span>
+                        <span>₹${(group.price * group.count).toFixed(2)}</span>
+                    </div>
+                `;
+            }).join('');
 
             return `
-                <div class="receipt-header">
-                    <h2>--- ${appTitle} ---</h2>
-                    <p>Order ID: ${order.id}</p>
-                    <p>Date: ${date}</p>
-                </div>
-                <div class="receipt-divider"></div>
-                ${itemsHtml}
-                <div class="receipt-divider"></div>
-                <div class="receipt-item receipt-total">
-                    <span>GRAND TOTAL:</span>
-                    <span>â‚¹${order.total.toFixed(2)}</span>
-                </div>
-                <div class="receipt-divider"></div>
-                <div class="receipt-footer">
-                    <p>Thank you for your order!</p>
+                <div class="receipt-style">
+                    <div class="receipt-header">
+                        <h2>--- ${appTitle} ---</h2>
+                        <p>தேதி: ${date}</p>
+                        <p>ஆர்டர் ID: ${order.id}</p>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-item" style="font-weight: 700;">
+                        <span>பொருள் (Item)</span>
+                        <span>விலை (Price)</span>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    ${itemsHtml}
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-item receipt-total">
+                        <span>மொத்த நிகர தொகை (NET TOTAL):</span>
+                        <span>₹${order.total.toFixed(2)}</span>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-footer">
+                        <p>நன்றி! மீண்டும் வருக!</p>
+                    </div>
                 </div>
             `;
         }
         
+        /**
+         * Prints the given order object using the iFrame technique for isolation.
+         */
         function printOrderSummary(orderToPrint = null) {
             const order = orderToPrint || currentCart;
 
@@ -837,12 +959,71 @@
                 return;
             }
             
-            const receiptDiv = document.getElementById('receipt-content');
-            if (receiptDiv) {
-                receiptDiv.innerHTML = generateReceiptHTML(order);
-                window.print(); 
-                setTimeout(() => receiptDiv.innerHTML = '', 100);
-            }
+            const receiptHtml = generateReceiptHTML(order);
+            
+            // 1. Create a hidden iframe
+            const iframe = document.createElement('iframe');
+            iframe.style.visibility = 'hidden';
+            iframe.style.position = 'absolute';
+            iframe.style.left = '-999px';
+            iframe.style.top = '-999px';
+            iframe.onload = function() {
+                const doc = iframe.contentWindow.document;
+                
+                // 2. Write the receipt content and styles to the iframe
+                doc.open();
+                doc.write(`
+                    <html>
+                    <head>
+                        <title>Receipt</title>
+                        <style>
+                            /* Embed all necessary receipt styles here to ensure isolation */
+                            body { margin: 0; }
+                            .receipt-style {
+                                font-family: monospace;
+                                font-size: 10px;
+                                color: black;
+                                width: 300px; 
+                                padding: 10px;
+                            }
+                            .receipt-style h2 { font-size: 14px; margin: 0; }
+                            .receipt-style p { margin: 2px 0; }
+                            .receipt-style .receipt-header, 
+                            .receipt-style .receipt-footer {
+                                text-align: center;
+                                margin-bottom: 5px;
+                            }
+                            .receipt-style .receipt-divider {
+                                border-top: 1px dashed black;
+                                margin: 5px 0;
+                            }
+                            .receipt-style .receipt-item {
+                                display: flex;
+                                justify-content: space-between;
+                            }
+                            .receipt-style .receipt-total {
+                                font-size: 12px;
+                                font-weight: bold;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${receiptHtml}
+                    </body>
+                    </html>
+                `);
+                doc.close();
+                
+                // 3. Print the iframe content
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                
+                // 4. Remove the iframe after a short delay
+                setTimeout(() => document.body.removeChild(iframe), 1000);
+            };
+
+            // Append the iframe to the body to start loading
+            document.body.appendChild(iframe);
         }
 
         // --- Quick Button/Menu Logic ---
@@ -863,7 +1044,7 @@
 
         const resetAllButtons = () => {
              document.querySelectorAll('.quick-button').forEach(btn => {
-                // Ensure we only reset item buttons, not the Print button if it's not confirmed
+                // Only reset item buttons
                 if (btn.dataset.itemIndex !== undefined) {
                     resetButtonState(btn);
                 }
@@ -876,6 +1057,12 @@
         function handleQuickClick(item, event, index) {
             const el = event.currentTarget;
             
+            // Handle Print Button separately (no confirmation needed)
+            if (el.dataset.type === 'print') {
+                printOrderSummary();
+                return;
+            }
+
             // 1. Check if the button is in the confirmation state
             if (el.dataset.state === 'confirm') {
                 // 2. CONFIRMATION: Add item and reset state immediately
@@ -896,7 +1083,7 @@
                 
                 // Change display to confirmation text
                 el.innerHTML = `
-                    <span>âœ…</span>
+                    <span>✅</span>
                     <span>CONFIRM?</span>
                     <span style="font-weight: 700;">Tap Again</span>
                 `;
@@ -913,7 +1100,7 @@
 
         function renderQuickButtons() {
             const container = document.getElementById('quick-buttons-container');
-            if (!container) return; 
+            if (!container) return; // Safety check: exit if container isn't ready
 
             container.innerHTML = '';
             
@@ -923,28 +1110,41 @@
                 button.type = 'button';
                 button.className = `quick-button`;
                 button.dataset.itemIndex = index; // Store index for confirmation logic
+                
+                // Set styling based on type
+                if (item.type === 'expense') {
+                    button.style.borderColor = 'var(--color-expense)';
+                    button.style.color = 'var(--color-expense)';
+                    button.style.backgroundColor = '#fff5f5'; 
+                } else {
+                    button.style.borderColor = 'var(--color-secondary-accent)';
+                    button.style.color = 'var(--color-text-dark)';
+                    button.style.backgroundColor = 'var(--color-card-bg)';
+                }
+
                 button.innerHTML = `
-                    <span>${item.icon || 'ðŸ“¦'}</span>
+                    <span>${item.icon || '📦'}</span>
                     <span>${item.name}</span>
-                    <span>â‚¹${item.price.toFixed(2)}</span>
+                    <span>₹${item.price.toFixed(2)}</span>
                 `;
                 button.onclick = (e) => handleQuickClick(item, e, index);
                 container.appendChild(button);
             });
             
-            // 2. Render Print Button (as a quick button) - This does NOT use the confirmation logic
+            // 2. Render Print Button (as a quick button) - uses data-type to bypass confirmation
             const printButton = document.createElement('button');
             printButton.type = 'button';
             printButton.className = `quick-button`;
+            printButton.dataset.type = 'print'; // Identify as print button
             printButton.style.backgroundColor = 'var(--color-secondary-accent)';
             printButton.style.color = 'white';
             printButton.style.borderColor = 'transparent';
             printButton.innerHTML = `
-                <span>ðŸ–¨ï¸</span>
+                <span>🖨️</span>
                 <span>Print Order</span>
                 <span style="color: white; font-weight: 700;">Tap to Print</span>
             `;
-            printButton.onclick = () => printOrderSummary(); 
+            printButton.onclick = (e) => handleQuickClick(null, e, null); // Use handleQuickClick for consistency
             container.appendChild(printButton);
 
 
@@ -959,10 +1159,16 @@
             const datalist = document.getElementById('default-products');
             if (!datalist) return;
 
+            // Include quick menu items and some common expense examples
+            const uniqueNames = new Set(quickMenuProducts.map(i => i.name));
+            uniqueNames.add("Rent");
+            uniqueNames.add("Supplies");
+            uniqueNames.add("Delivery Fee");
+
             datalist.innerHTML = '';
-            quickMenuProducts.forEach(item => {
+            uniqueNames.forEach(name => {
                 const option = document.createElement('option');
-                option.value = item.name;
+                option.value = name;
                 datalist.appendChild(option);
             });
         }
@@ -971,21 +1177,26 @@
             const form = document.getElementById('manual-entry-form');
             const nameInput = document.getElementById('product-name');
             const priceInput = document.getElementById('product-price');
+            const typeSelector = document.getElementById('type-selector');
             
-            if (!form || !nameInput || !priceInput) return;
+            if (!form || !nameInput || !priceInput || !typeSelector) return;
 
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
 
                 const name = nameInput.value.trim();
                 let price = parseFloat(priceInput.value);
+                // CRITICAL FIX: Ensure the radio button state is captured correctly
+                const type = form.querySelector('input[name="type"]:checked')?.value || 'income'; 
 
                 if (name && !isNaN(price) && price > 0) {
-                    const newItem = { name: name, price: parseFloat(price.toFixed(2)) };
+                    const newItem = { name: name, price: parseFloat(price.toFixed(2)), type: type };
                     addItemToCart(newItem);
                     
                     nameInput.value = '';
                     priceInput.value = '';
+                    // Reset type to income for next entry
+                    form.querySelector('input[value="income"]').checked = true; 
                 } else {
                     showTemporaryMessage("Please ensure you enter a valid name and a price greater than 0.");
                 }
@@ -993,6 +1204,68 @@
         }
 
         // --- Quick Menu Management Modal Logic ---
+        
+        // NEW: Menu Export/Import Logic
+        function setupMenuSharing() {
+            const exportBtn = document.getElementById('export-menu-btn');
+            const importInput = document.getElementById('import-menu-input');
+            const importBtn = document.getElementById('import-menu-btn');
+            
+            // EXPORT Handler
+            if (exportBtn) exportBtn.addEventListener('click', () => {
+                if (quickMenuProducts.length === 0) {
+                    showTemporaryMessage("Menu is empty. Add items first.");
+                    return;
+                }
+                try {
+                    // Encode the JSON string to base64 for safe copying
+                    const jsonString = JSON.stringify(quickMenuProducts);
+                    const encodedData = btoa(jsonString); 
+                    importInput.value = encodedData; 
+                    
+                    // Use execCommand for better cross-mobile copying
+                    importInput.select();
+                    document.execCommand('copy');
+                    
+                    showTemporaryMessage("Menu code copied to clipboard!");
+                } catch (e) {
+                    showTemporaryMessage("Error exporting menu.");
+                }
+            });
+            
+            // IMPORT Handler
+            if (importBtn) importBtn.addEventListener('click', () => {
+                const code = importInput.value.trim();
+                if (!code) {
+                    showTemporaryMessage("Please paste a menu code to import.");
+                    return;
+                }
+                
+                if (!window.confirm("WARNING: Importing will overwrite ALL current Quick Menu items. Continue?")) {
+                    return;
+                }
+
+                try {
+                    // Decode from base64 and parse JSON
+                    const jsonString = atob(code);
+                    const importedData = JSON.parse(jsonString);
+
+                    if (Array.isArray(importedData) && importedData.every(item => item.name && typeof item.price === 'number')) {
+                        saveData(MENU_KEY, importedData);
+                        importInput.value = ''; // Clear input field
+                        showTemporaryMessage("Menu successfully imported and updated!");
+                        // Re-render the modal list and buttons immediately
+                        renderMenuManagementList();
+                        renderQuickButtons();
+                    } else {
+                        showTemporaryMessage("Invalid menu data format.");
+                    }
+                } catch (e) {
+                    console.error("Import error:", e);
+                    showTemporaryMessage("Import failed. Check if the code is correct.");
+                }
+            });
+        }
         
         function renderMenuManagementList() {
             const listContainer = document.getElementById('current-menu-items-list');
@@ -1015,12 +1288,14 @@
                 itemDiv.style.borderRadius = '8px';
                 itemDiv.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05)';
                 
+                const typeLabel = item.type === 'expense' ? '(Expense)' : '(Revenue)';
+
                 itemDiv.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 20px;">${item.icon || 'ðŸ“¦'}</span>
+                        <span style="font-size: 20px;">${item.icon || '📦'}</span>
                         <div>
                             <span style="font-weight: 600; color: var(--color-text-dark);">${item.name}</span>
-                            <span style="font-size: 12px; color: #888; display: block;">â‚¹${item.price.toFixed(2)}</span>
+                            <span style="font-size: 12px; color: #888; display: block;">₹${item.price.toFixed(2)} ${typeLabel}</span>
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
@@ -1046,6 +1321,28 @@
             const iconInput = document.getElementById('item-icon');
             const indexInput = document.getElementById('item-index-to-edit');
             const submitBtn = document.getElementById('form-submit-btn');
+            const menuFormEl = document.getElementById('menu-item-form');
+
+            // --- CRITICAL FIX: Robust handling of the type select element ---
+            let typeInput = document.getElementById('item-type-select');
+            
+            if (!typeInput) {
+                 // Create the select element if it doesn't exist
+                 typeInput = document.createElement('select');
+                 typeInput.id = 'item-type-select';
+                 typeInput.name = 'item-type-select'; 
+                 typeInput.innerHTML = '<option value="income">Revenue (Income)</option><option value="expense">Expense</option>';
+                 typeInput.style.padding = '8px';
+                 typeInput.style.border = '1px solid #ccc';
+                 typeInput.style.borderRadius = '6px';
+                 typeInput.style.marginBottom = '12px'; 
+                 
+                 // Insert it logically before price/icon inputs
+                 const priceInputEl = document.getElementById('item-price');
+                 if(priceInputEl && menuFormEl) {
+                     menuFormEl.insertBefore(typeInput, priceInputEl.parentNode); // Insert before the price input div
+                 }
+            }
 
             if (!item || !nameInput || !priceInput || !iconInput || !indexInput || !submitBtn) return;
 
@@ -1053,6 +1350,7 @@
             nameInput.value = item.name;
             priceInput.value = item.price.toFixed(2);
             iconInput.value = item.icon || '';
+            typeInput.value = item.type || 'income'; // Set the existing type
             
             submitBtn.textContent = 'Update Item';
             submitBtn.style.backgroundColor = '#f97316'; 
@@ -1062,6 +1360,7 @@
             const form = document.getElementById('menu-item-form');
             const indexInput = document.getElementById('item-index-to-edit');
             const submitBtn = document.getElementById('form-submit-btn');
+            const typeInput = document.getElementById('item-type-select');
 
             if (!form || !indexInput || !submitBtn) return;
 
@@ -1069,6 +1368,11 @@
             indexInput.value = '';
             submitBtn.textContent = 'Add New Item';
             submitBtn.style.backgroundColor = 'var(--color-success)';
+            
+            // Remove the dynamically added type select element after reset
+            if (typeInput) {
+                typeInput.remove();
+            }
         }
 
         const menuForm = document.getElementById('menu-item-form');
@@ -1082,14 +1386,22 @@
 
                 const name = document.getElementById('item-name').value.trim();
                 const price = parseFloat(document.getElementById('item-price').value);
-                const icon = document.getElementById('item-icon').value.trim() || 'ðŸ“¦';
+                const icon = document.getElementById('item-icon').value.trim() || '📦';
+                
+                // Get type from the dynamically created select box if editing, otherwise assume income
+                let type = 'income'; 
+                if (isEditing) {
+                    const typeSelect = document.getElementById('item-type-select');
+                    if (typeSelect) type = typeSelect.value;
+                }
+
                 
                 if (!name || isNaN(price) || price <= 0) {
                     showTemporaryMessage("Invalid item details. Check name and price.");
                     return;
                 }
 
-                const newItem = { name: name, price: parseFloat(price.toFixed(2)), icon: icon };
+                const newItem = { name: name, price: parseFloat(price.toFixed(2)), icon: icon, type: type };
                 let updatedProducts = [...quickMenuProducts];
 
                 if (isEditing) {
@@ -1108,7 +1420,7 @@
             const itemToDelete = quickMenuProducts[index];
             if (!itemToDelete) return;
 
-            if (window.confirm(`Are you sure you want to delete "${itemToDelete.name}"?`)) {
+            if (window.confirm(`Are you sure you want to delete "${itemToDelete.name}"? This will remove it from Quick Add.`)) {
                 let updatedProducts = quickMenuProducts.filter((_, i) => i !== index);
 
                 saveData(MENU_KEY, updatedProducts);
@@ -1120,40 +1432,50 @@
         // --- Initialization ---
 
         function initApp() {
-            // Load all data
-            quickMenuProducts = loadData(MENU_KEY, INITIAL_PRODUCT_DATA);
-            orderHistory = loadData(HISTORY_KEY, []);
-            currentCart = loadData(CART_KEY, { items: [], total: 0 });
+            try {
+                // Load all data
+                quickMenuProducts = loadData(MENU_KEY, INITIAL_PRODUCT_DATA); 
+                orderHistory = loadData(HISTORY_KEY, []);
+                currentCart = loadData(CART_KEY, { items: [], total: 0 });
 
-            // Setup Title Management
-            setupTitleManagement();
+                // Setup Title Management
+                setupTitleManagement();
 
-            // Initial Renders
-            updateDateTime(); 
-            renderQuickButtons(); 
-            populateDatalist();
-            renderMenuManagementList();
-            renderCart(currentCart);
+                // Initial Renders
+                updateDateTime(); 
+                renderQuickButtons(); 
+                populateDatalist();
+                renderMenuManagementList();
+                renderCart(currentCart);
 
-            // Setup listeners
-            setupManualEntry();
-            setupHistoryModal();
-            
-            // BIND ACTION BUTTONS
-            document.getElementById('clear-order-button')?.addEventListener('click', completeAndClearOrder);
-            
-            // Setup Modal listeners
-            document.getElementById('manage-menu-btn')?.addEventListener('click', () => {
-                document.getElementById('manage-menu-modal')?.classList.remove('hidden');
-            });
-            document.getElementById('close-modal-btn')?.addEventListener('click', () => {
-                document.getElementById('manage-menu-modal')?.classList.add('hidden');
-                resetForm();
-            });
+                // Setup listeners
+                setupManualEntry();
+                setupHistoryModal();
+                setupMenuSharing(); 
+                
+                // BIND ACTION BUTTONS
+                document.getElementById('clear-order-button')?.addEventListener('click', completeAndClearOrder);
+                
+                // Setup Modal listeners
+                document.getElementById('manage-menu-btn')?.addEventListener('click', () => {
+                    document.getElementById('manage-menu-modal')?.classList.remove('hidden');
+                });
+                document.getElementById('close-modal-btn')?.addEventListener('click', () => {
+                    document.getElementById('manage-menu-modal')?.classList.add('hidden');
+                    resetForm();
+                });
+            } catch (error) {
+                // Catches any critical error during init and displays a message
+                console.error("Critical error during app initialization:", error);
+                const display = document.getElementById('datetime-display');
+                 if (display) {
+                    display.textContent = `CRITICAL ERROR: Please reload.`;
+                }
+            }
         }
 
-        // CRITICAL FIX: Ensure JS runs ONLY after the DOM is fully ready.
-        initApp();
+        // CRITICAL FINAL FIX: Wrap initialization in a small timeout to force DOM parsing completion first.
+        setTimeout(initApp, 50);
 
     </script>
 
