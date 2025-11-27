@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweet Temptations POS - Local Storage</title>
+    
+    <style>
+        /* --- Self-Contained CSS for Local Operation --- */
+
+        /* Custom bakery-attractive color scheme: Chocolate, Cream, Raspberry, Caramel */
+        :root {
+            --color-bg-primary: #fbf7f4; /* Soft Cream */
+            --color-card-bg: #ffffff;
+            --color-text-dark: #382017; /* Deep Chocolate Brown */
+            --color-accent: #d46a6a; /* Soft Raspberry Red */
+            --color-secondary-accent: #a87b5a; /* Warm Caramel Brown */
+            --color-success: #48bb78; /* Green */
+            --color-error: #ef4444; /* Red */
+        }
+        body {
+            font-family: Arial, sans-serif; /* Fallback to system font */
+            background-color: var(--color-bg-primary);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 768px; /* Max width for content */
+            padding: 8px; /* Reduced padding */
+            display: block; /* Ensure container is displayed */
+        }
+        header {
+            width: 100%;
+            padding: 16px 8px; /* Reduced vertical padding */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+        }
+        .header-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-grow: 1;
+            margin: 0 16px;
+        }
+        .title-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        h1 {
+            font-size: 24px; /* Reduced font size */
+            font-weight: 800;
+            color: var(--color-text-dark);
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        .date-display {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-secondary-accent);
+        }
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px; /* Reduced gap */
+            width: 100%;
+        }
+        @media (min-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 2fr 1fr;
+            }
+            .lg-col-span-2 {
+                grid-column: span 2 / span 2;
+            }
+        }
+
+        /* Card Styling */
+        .card {
+            background-color: var(--color-card-bg);
+            padding: 16px; /* Reduced padding */
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-top: 4px solid var(--color-accent);
+        }
+        .quick-buttons-card {
+            border-top: 4px solid var(--color-accent);
+        }
+        .manual-entry-card {
+            border-top: 4px solid gray;
+        }
+        .order-summary-card {
+            border-top: 4px solid var(--color-accent);
+            position: sticky;
+            top: 8px;
+        }
+
+        /* Button Styling */
+        button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        button:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .action-btn-secondary {
+            background-color: var(--color-secondary-accent);
+            color: white;
+        }
+        .action-btn-success {
+            background-color: var(--color-success);
+            color: white;
+        }
+
+        /* Quick Button Grid */
+        #quick-buttons-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .quick-button {
+            background-color: var(--color-card-bg);
+            color: var(--color-text-dark);
+            border: 2px solid var(--color-secondary-accent);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 8px;
+            text-align: center;
+        }
+        .quick-button:hover {
+            border-color: var(--color-accent);
+        }
+        .quick-button span:first-child {
+            font-size: 28px;
+        }
+        .quick-button span:nth-child(2) {
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .quick-button span:last-child {
+            font-weight: 700;
+            color: var(--color-accent);
+            font-size: 14px;
+        }
+        
+        /* New confirmation state styling */
+        .confirm-state {
+            background-color: #fcd34d !important; /* Yellow */
+            border-color: #f59e0b !important;
+            color: var(--color-text-dark) !important;
+        }
+        .confirm-state span:last-child {
+            color: var(--color-text-dark) !important;
+        }
+
+        /* Form Styling */
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        /* Cart List Styling */
+        #cart-items-list {
+            min-height: 96px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+            display: block; /* Ensure cart list is displayed */
+        }
+        #cart-items-list > div {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background-color: #f7f7f7;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .cart-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--color-text-dark);
+            margin-bottom: 16px;
+        }
+
+        /* Modal Styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            width: 95%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .hidden {
+            display: none;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .close-btn {
+            font-size: 32px;
+            line-height: 1;
+            cursor: pointer;
+            color: #555;
+        }
+
+        /* Print Specific CSS */
+        @media print {
+            body { background-color: white; }
+            header, main, .modal-overlay, #custom-message-box {
+                display: none !important;
+            }
+            #receipt-content {
+                display: block !important;
+                width: 300px; 
+                margin: 0 auto;
+                padding: 10px;
+                font-family: monospace;
+                font-size: 10px;
+            }
+            #receipt-content .receipt-header, 
+            #receipt-content .receipt-footer {
+                text-align: center;
+                margin-bottom: 5px;
+            }
+            #receipt-content .receipt-divider {
+                border-top: 1px dashed black;
+                margin: 5px 0;
+            }
+            #receipt-content .receipt-item {
+                display: flex;
+                justify-content: space-between;
+            }
+            #receipt-content .receipt-total {
+                font-size: 12px;
+                font-weight: bold;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- Header -->
+        <header>
+            
+            <!-- Left Side: Order History Button -->
+            <button id="view-history-btn" 
+                    class="action-btn-secondary">
+                Order History
+            </button>
+            
+            <!-- Center Block: Title and Date -->
+            <div class="header-center"> 
+                <div class="title-group">
+                    <h1 id="app-title" title="Click to edit title">
+                        Sweet Temptations Bakery POS
+                    </h1>
+                    <button id="edit-title-btn" style="background: none; padding: 0;">
+                        <!-- Pencil Icon for Edit -->
+                        <svg xmlns="http://www.w3.org/2000/svg" style="height: 20px; width: 20px; color: var(--color-secondary-accent);" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zm-3.182 3.182l-7.279 7.279a1 1 0 00-.256.342l-1 3a1 1 0 001.266 1.266l3-1a1 1 0 00.342-.256l7.279-7.279-2.828-2.828z" />
+                        </svg>
+                    </button>
+                </div>
+                <!-- Initial text to ensure the element exists before JS runs -->
+                <div id="datetime-display" class="date-display">Loading Date...</div> 
+            </div>
+            
+            <!-- Right Side: Invisible Placeholder (Balances the flex layout to center the title) -->
+            <div style="width: 100px;"></div> 
+        </header>
+
+        <!-- Main Content Area (Responsive Grid) -->
+        <main class="main-grid">
+
+            <!-- Left Column: Product Selection -->
+            <section class="lg-col-span-2" style="display: flex; flex-direction: column; gap: 16px;">
+
+                <!-- 1. Quick Buttons (Grid Layout for Mobile) -->
+                <div class="card quick-buttons-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h2 style="font-size: 20px; font-weight: 700; color: var(--color-text-dark);">Menu & Quick Add</h2>
+                        <button id="manage-menu-btn" class="action-btn-secondary" style="font-size: 14px;">
+                            Manage Menu
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Buttons Container: Must exist for JS to target -->
+                    <div id="quick-buttons-container">
+                        <!-- Quick buttons are injected here by JS -->
+                    </div>
+                </div>
+
+                <!-- 2. Manual Entry -->
+                <div class="card manual-entry-card">
+                    <h2 style="font-size: 20px; font-weight: 700; color: var(--color-text-dark); margin-bottom: 16px;">Custom / Manual Entry</h2>
+                    <form id="manual-entry-form" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div class="form-row">
+                            <!-- Product Name Input with Datalist -->
+                            <div style="flex-grow: 1;">
+                                <label for="product-name" style="font-size: 12px; font-weight: 500; color: #555; display: block; margin-bottom: 4px;">Product Name</label>
+                                <input type="text" id="product-name" list="default-products" placeholder="e.g., Croissant, Tea" required>
+                                <datalist id="default-products"></datalist>
+                            </div>
+                            
+                            <!-- Price Input -->
+                            <div style="width: 30%;">
+                                <label for="product-price" style="font-size: 12px; font-weight: 500; color: #555; display: block; margin-bottom: 4px;">Price (â‚¹)</label>
+                                <input type="number" id="product-price" placeholder="0.00" step="0.01" min="0.01" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="action-btn-secondary" style="padding: 12px;">
+                            Add Custom Item to Order
+                        </button>
+                    </form>
+                </div>
+
+            </section>
+
+            <!-- Right Column: Order Summary (Sticky on larger screens) -->
+            <aside>
+                <div class="card order-summary-card">
+                    <h2 style="font-size: 20px; font-weight: 700; color: var(--color-text-dark); margin-bottom: 16px;">Current Order</h2>
+
+                    <!-- Cart List -->
+                    <div id="cart-items-list">
+                        <p style="color: #888; text-align: center; padding: 16px 0;" id="empty-cart-message">Order is empty.</p>
+                    </div>
+
+                    <!-- Separator -->
+                    <hr style="margin: 16px 0; border: 0; border-top: 1px solid #eee;">
+
+                    <!-- Total -->
+                    <div class="cart-total">
+                        <span>TOTAL:</span>
+                        <span id="cart-total-display" style="color: var(--color-accent);">â‚¹0.00</span>
+                    </div>
+                    
+                    <!-- Action Buttons (Complete & Clear) -->
+                    <div style="display: flex; gap: 8px;">
+                        <button id="clear-order-button"
+                            class="action-btn-success" style="width: 100%; padding: 12px;" disabled>
+                            Complete & Clear
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Hidden element for print content generation -->
+    <div id="receipt-content" style="display: none;"></div>
+
+
+    <!-- Quick Menu Management Modal -->
+    <div id="manage-menu-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 style="font-size: 20px; font-weight: 700; color: var(--color-text-dark);">Manage Quick Menu Items</h3>
+                <button id="close-modal-btn" class="close-btn">&times;</button>
+            </div>
+
+            <!-- Add/Edit Form -->
+            <form id="menu-item-form" style="display: flex; flex-direction: column; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #eee;">
+                <input type="hidden" id="item-index-to-edit">
+                <input type="text" id="item-name" placeholder="Name (e.g., Croissant)" required>
+                <input type="number" id="item-price" placeholder="Price (e.g., 12.50)" step="0.01" min="0.01" required>
+                <input type="text" id="item-icon" placeholder="Emoji Icon (e.g., ðŸ¥)">
+                
+                <button type="submit" id="form-submit-btn" class="action-btn-success" style="padding: 10px;">
+                    Add New Item
+                </button>
+            </form>
+
+            <!-- Current Items List -->
+            <h4 style="font-size: 14px; font-weight: 600; color: #555; margin-bottom: 8px;">Current Items:</h4>
+            <div id="current-menu-items-list" style="display: flex; flex-direction: column; gap: 8px;">
+                <p style="text-align: center; color: #888;" id="menu-list-status">Loading menu items...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order History Modal -->
+    <div id="history-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 style="font-size: 20px; font-weight: 700; color: var(--color-text-dark);">Completed Order History</h3>
+                <button id="close-history-modal-btn" class="close-btn">&times;</button>
+            </div>
+
+            <div id="history-content" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- History groups injected here -->
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Custom Message Box for non-alert messages -->
+    <div id="custom-message-box" style="position: fixed; bottom: 16px; right: 16px; z-index: 50; opacity: 0; transition: opacity 0.3s; pointer-events: none;">
+        <div style="background-color: #333; color: white; font-size: 14px; padding: 8px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);" id="message-content"></div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        
+        // --- Configuration ---
+        const CONFIRM_TIMEOUT_MS = 3000; 
+
+        // --- Local Storage Keys ---
+        const CART_KEY = 'bakery_cart';
+        const MENU_KEY = 'bakery_quick_menu';
+        const TITLE_KEY = 'bakery_app_title'; 
+        const HISTORY_KEY = 'bakery_order_history'; 
+
+        // Local state variables
+        let quickMenuProducts = [];
+        let currentCart = { items: [], total: 0 };
+        let orderHistory = []; 
+
+        // --- Core Data ---
+        const INITIAL_PRODUCT_DATA = [
+            { name: "Tea", price: 15.00, icon: 'â˜•' },
+            { name: "Coffee", price: 20.00, icon: 'ðŸµ' },
+            { name: "Snacks", price: 10.00, icon: 'ðŸª' },
+            { name: "Snacks 1", price: 15.00, icon: 'ðŸ©' },
+        ];
+        
+        // --- Title Management ---
+        const DEFAULT_TITLE = "Sweet Temptations Bakery POS";
+
+        function loadTitle() {
+            return localStorage.getItem(TITLE_KEY) || DEFAULT_TITLE;
+        }
+
+        function saveTitle(newTitle) {
+            localStorage.setItem(TITLE_KEY, newTitle);
+            const titleElement = document.getElementById('app-title');
+            if (titleElement) titleElement.textContent = newTitle;
+            showTemporaryMessage("Title updated successfully!");
+        }
+
+        function setupTitleManagement() {
+            const titleElement = document.getElementById('app-title');
+            const editButton = document.getElementById('edit-title-btn');
+            
+            if (titleElement) titleElement.textContent = loadTitle();
+
+            const handleEdit = () => {
+                if (!titleElement) return;
+                const currentTitle = titleElement.textContent;
+                
+                const newTitle = prompt("Edit POS Title:", currentTitle);
+
+                if (newTitle !== null) { 
+                    const trimmedTitle = newTitle.trim();
+                    if (trimmedTitle !== "" && trimmedTitle !== currentTitle) {
+                        saveTitle(trimmedTitle);
+                    } else if (trimmedTitle === "" && currentTitle !== DEFAULT_TITLE) {
+                        if (window.confirm("Are you sure you want to reset the title to default?")) {
+                            saveTitle(DEFAULT_TITLE);
+                        }
+                    }
+                }
+            };
+
+            if (editButton) editButton.addEventListener('click', handleEdit);
+            if (titleElement) titleElement.addEventListener('click', handleEdit);
+        }
+        
+        // --- Date Only Display Utility ---
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = now.toLocaleDateString(undefined, dateOptions);
+            
+            const display = document.getElementById('datetime-display');
+            if (display) {
+                display.textContent = dateStr;
+            }
+        }
+        
+        // --- Local Storage Utility ---
+        
+        function loadData(key, defaultData) {
+            try {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    return JSON.parse(data);
+                }
+            } catch (e) {
+                console.error("Error reading from localStorage:", e);
+            }
+            return defaultData;
+        }
+
+        function saveData(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+                
+                if (key === CART_KEY) {
+                    currentCart = data;
+                    renderCart(currentCart);
+                } else if (key === MENU_KEY) {
+                    quickMenuProducts = data;
+                    renderQuickButtons();
+                    populateDatalist();
+                    renderMenuManagementList();
+                } else if (key === HISTORY_KEY) {
+                    orderHistory = data;
+                }
+
+            } catch (e) {
+                console.error("Error writing to localStorage:", e);
+                showTemporaryMessage("Error saving data locally. Storage might be full.");
+            }
+        }
+
+        // --- Utility Functions ---
+
+        function showTemporaryMessage(message) {
+            const msgBox = document.getElementById('custom-message-box');
+            const msgContent = document.getElementById('message-content');
+            if (!msgBox || !msgContent) return; 
+
+            msgContent.textContent = message;
+
+            msgBox.style.opacity = '1';
+            msgBox.style.pointerEvents = 'auto';
+
+            setTimeout(() => {
+                msgBox.style.opacity = '0';
+                msgBox.style.pointerEvents = 'none';
+            }, 3000);
+        }
+        
+        // --- History Management ---
+
+        function saveOrderToHistory(cart) {
+            if (cart.items.length === 0) return;
+
+            const newRecord = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                total: cart.total,
+                items: cart.items,
+                dateKey: new Date().toDateString() 
+            };
+            
+            let history = loadData(HISTORY_KEY, []);
+            history.unshift(newRecord); 
+            saveData(HISTORY_KEY, history);
+        }
+
+        function setupHistoryModal() {
+            const viewBtn = document.getElementById('view-history-btn');
+            const modal = document.getElementById('history-modal');
+            const closeBtn = document.getElementById('close-history-modal-btn');
+
+            if (viewBtn) viewBtn.addEventListener('click', () => {
+                renderHistoryList();
+                modal?.classList.remove('hidden');
+            });
+            if (closeBtn) closeBtn.addEventListener('click', () => {
+                modal?.classList.add('hidden');
+            });
+        }
+        
+        function renderHistoryList() {
+            const container = document.getElementById('history-content');
+            if (!container) return;
+
+            const groupedHistory = orderHistory.reduce((acc, order) => {
+                const date = order.dateKey;
+                if (!acc[date]) {
+                    acc[date] = [];
+                }
+                acc[date].push(order);
+                return acc;
+            }, {});
+
+            container.innerHTML = '';
+
+            const dates = Object.keys(groupedHistory).sort((a, b) => new Date(b) - new Date(a));
+
+            if (dates.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #888; padding: 32px 0;">No completed orders found.</p>';
+                return;
+            }
+
+            dates.forEach(date => {
+                const dateGroup = document.createElement('div');
+                dateGroup.style.border = '1px solid #ddd';
+                dateGroup.style.padding = '12px';
+                dateGroup.style.borderRadius = '8px';
+                dateGroup.style.backgroundColor = '#f9f9f9';
+                
+                const dateTitle = document.createElement('h4');
+                dateTitle.style.fontWeight = '700';
+                dateTitle.style.fontSize = '18px';
+                dateTitle.style.color = 'var(--color-text-dark)';
+                dateTitle.style.marginBottom = '8px';
+                dateTitle.style.borderBottom = '1px solid #eee';
+                dateTitle.style.paddingBottom = '4px';
+                dateTitle.textContent = date;
+                dateGroup.appendChild(dateTitle);
+
+                groupedHistory[date].forEach(order => {
+                    const orderTime = new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    const orderDiv = document.createElement('div');
+                    orderDiv.style.display = 'flex';
+                    orderDiv.style.justifyContent = 'space-between';
+                    orderDiv.style.alignItems = 'center';
+                    orderDiv.style.padding = '8px 0';
+                    orderDiv.style.borderBottom = '1px dashed #eee';
+                    
+                    orderDiv.innerHTML = `
+                        <div style="font-size: 14px;">
+                            <span style="font-weight: 500; color: #555;">${orderTime}</span>
+                            <span style="margin-left: 16px; font-weight: 700; font-size: 16px; color: var(--color-accent);">â‚¹${order.total.toFixed(2)}</span>
+                            <span style="color: #888; margin-left: 8px;">(${order.items.length} items)</span>
+                        </div>
+                        <button data-order-id="${order.id}" class="print-history-btn" style="padding: 6px 10px; font-size: 12px; font-weight: 600; border-radius: 4px; color: white; background-color: #3b82f6;">Print</button>
+                    `;
+                    dateGroup.appendChild(orderDiv);
+                });
+                
+                container.appendChild(dateGroup);
+            });
+            
+            container.querySelectorAll('.print-history-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const orderId = parseInt(e.currentTarget.dataset.orderId);
+                    const orderToPrint = orderHistory.find(o => o.id === orderId);
+                    if (orderToPrint) {
+                        printOrderSummary(orderToPrint);
+                    }
+                };
+            });
+        }
+
+
+        // --- Cart Management ---
+        
+        function addItemToCart(newItem) {
+            const updatedItems = [...currentCart.items, newItem];
+            const updatedTotal = updatedItems.reduce((sum, item) => sum + item.price, 0);
+
+            currentCart = {
+                items: updatedItems,
+                total: parseFloat(updatedTotal.toFixed(2))
+            };
+            
+            saveData(CART_KEY, currentCart);
+            showTemporaryMessage(`Added: ${newItem.name} (â‚¹${newItem.price.toFixed(2)})`);
+        }
+
+        function completeAndClearOrder() {
+            if (currentCart.items.length === 0) {
+                showTemporaryMessage("The order is already empty.");
+                return;
+            }
+            
+            const total = currentCart.total;
+
+            saveOrderToHistory(currentCart);
+            
+            currentCart = { items: [], total: 0 };
+            saveData(CART_KEY, currentCart);
+            
+            showTemporaryMessage(`Order completed! Total: â‚¹${total.toFixed(2)}. Cart cleared.`);
+        }
+
+        function renderCart(cart) {
+            const listContainer = document.getElementById('cart-items-list');
+            const totalDisplay = document.getElementById('cart-total-display');
+            const completeBtn = document.getElementById('clear-order-button');
+            
+            if (!listContainer || !totalDisplay || !completeBtn) return;
+
+            const items = cart?.items || [];
+            const total = cart?.total || 0;
+
+            listContainer.innerHTML = '';
+            
+            if (items.length === 0) {
+                listContainer.innerHTML = '<p style="color: #888; text-align: center; padding: 16px 0;" id="empty-cart-message">Order is empty.</p>';
+                completeBtn.disabled = true;
+            } else {
+                completeBtn.disabled = false;
+                
+                const itemCounts = items.reduce((acc, item) => {
+                    const priceKey = item.price.toFixed(2);
+                    const key = `${item.name}-${priceKey}`;
+                    if (!acc[key]) {
+                        acc[key] = { count: 0, item: item };
+                    }
+                    acc[key].count++;
+                    return acc;
+                }, {});
+
+                Object.values(itemCounts).forEach(group => {
+                    const item = group.item;
+                    const count = group.count;
+                    const listItem = document.createElement('div');
+                    
+                    listItem.dataset.itemJson = JSON.stringify(item); 
+                    listItem.dataset.count = count;
+                    
+                    listItem.style.display = 'flex';
+                    listItem.style.justifyContent = 'space-between';
+                    listItem.style.padding = '8px';
+                    listItem.style.backgroundColor = '#f7f7f7';
+                    listItem.style.borderRadius = '6px';
+                    listItem.style.marginBottom = '8px';
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.style.fontWeight = '500';
+                    nameSpan.style.overflow = 'hidden';
+                    nameSpan.style.whiteSpace = 'nowrap';
+                    nameSpan.style.textOverflow = 'ellipsis';
+                    nameSpan.textContent = `${item.name} (x${count})`;
+
+                    const priceSpan = document.createElement('span');
+                    priceSpan.style.fontWeight = '700';
+                    priceSpan.style.textAlign = 'right';
+                    priceSpan.style.color = 'var(--color-text-dark)';
+                    priceSpan.textContent = `â‚¹${(item.price * count).toFixed(2)}`;
+
+                    listItem.appendChild(nameSpan);
+                    listItem.appendChild(priceSpan);
+                    listContainer.appendChild(listItem);
+                });
+            }
+
+            totalDisplay.textContent = `â‚¹${total.toFixed(2)}`;
+        }
+
+        // --- Print Functionality (Current Cart or History) ---
+
+        function generateReceiptHTML(order) {
+            const appTitle = loadTitle();
+            const date = new Date(order.timestamp).toLocaleString();
+            
+            const groupedItems = order.items.reduce((acc, item) => {
+                const key = `${item.name}|${item.price.toFixed(2)}`;
+                acc[key] = acc[key] || { count: 0, name: item.name, price: item.price };
+                acc[key].count++;
+                return acc;
+            }, {});
+            
+            let itemsHtml = Object.values(groupedItems).map(group => `
+                <div class="receipt-item">
+                    <span>${group.count} x ${group.name}</span>
+                    <span>â‚¹${(group.price * group.count).toFixed(2)}</span>
+                </div>
+            `).join('');
+
+            return `
+                <div class="receipt-header">
+                    <h2>--- ${appTitle} ---</h2>
+                    <p>Order ID: ${order.id}</p>
+                    <p>Date: ${date}</p>
+                </div>
+                <div class="receipt-divider"></div>
+                ${itemsHtml}
+                <div class="receipt-divider"></div>
+                <div class="receipt-item receipt-total">
+                    <span>GRAND TOTAL:</span>
+                    <span>â‚¹${order.total.toFixed(2)}</span>
+                </div>
+                <div class="receipt-divider"></div>
+                <div class="receipt-footer">
+                    <p>Thank you for your order!</p>
+                </div>
+            `;
+        }
+        
+        function printOrderSummary(orderToPrint = null) {
+            const order = orderToPrint || currentCart;
+
+            if (order.items.length === 0) {
+                showTemporaryMessage("Cannot print: Order is empty.");
+                return;
+            }
+            
+            const receiptDiv = document.getElementById('receipt-content');
+            if (receiptDiv) {
+                receiptDiv.innerHTML = generateReceiptHTML(order);
+                window.print(); 
+                setTimeout(() => receiptDiv.innerHTML = '', 100);
+            }
+        }
+
+        // --- Quick Button/Menu Logic ---
+
+        const resetButtonState = (el) => {
+            if (el && el.dataset.state === 'confirm') {
+                const originalContent = el.dataset.originalHtml;
+                // Revert button content and styling
+                el.innerHTML = originalContent; 
+                el.classList.remove('confirm-state');
+                el.dataset.state = '';
+
+                // Clear the associated timer
+                clearTimeout(el.dataset.timerId);
+                delete el.dataset.timerId;
+            }
+        };
+
+        const resetAllButtons = () => {
+             document.querySelectorAll('.quick-button').forEach(btn => {
+                // Ensure we only reset item buttons, not the Print button if it's not confirmed
+                if (btn.dataset.itemIndex !== undefined) {
+                    resetButtonState(btn);
+                }
+             });
+        }
+
+        /**
+         * Handles the click for the quick buttons, implementing the double-click confirmation.
+         */
+        function handleQuickClick(item, event, index) {
+            const el = event.currentTarget;
+            
+            // 1. Check if the button is in the confirmation state
+            if (el.dataset.state === 'confirm') {
+                // 2. CONFIRMATION: Add item and reset state immediately
+                addItemToCart(item);
+                
+                // Reset all buttons, just in case, including the one that was just confirmed
+                resetAllButtons(); 
+
+            } else {
+                // 3. FIRST CLICK: Enter confirmation state
+                
+                // Reset any *other* pending buttons first
+                resetAllButtons(); 
+                
+                // Set the current button to confirmation state
+                el.dataset.state = 'confirm';
+                el.dataset.originalHtml = el.innerHTML; // Store original HTML
+                
+                // Change display to confirmation text
+                el.innerHTML = `
+                    <span>âœ…</span>
+                    <span>CONFIRM?</span>
+                    <span style="font-weight: 700;">Tap Again</span>
+                `;
+                el.classList.add('confirm-state');
+
+                // Set a timer to automatically reset after 3 seconds
+                const timerId = setTimeout(() => {
+                    resetButtonState(el);
+                }, CONFIRM_TIMEOUT_MS); 
+
+                el.dataset.timerId = timerId; // Store timer ID
+            }
+        }
+
+        function renderQuickButtons() {
+            const container = document.getElementById('quick-buttons-container');
+            if (!container) return; 
+
+            container.innerHTML = '';
+            
+            // 1. Render Product Buttons
+            quickMenuProducts.forEach((item, index) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `quick-button`;
+                button.dataset.itemIndex = index; // Store index for confirmation logic
+                button.innerHTML = `
+                    <span>${item.icon || 'ðŸ“¦'}</span>
+                    <span>${item.name}</span>
+                    <span>â‚¹${item.price.toFixed(2)}</span>
+                `;
+                button.onclick = (e) => handleQuickClick(item, e, index);
+                container.appendChild(button);
+            });
+            
+            // 2. Render Print Button (as a quick button) - This does NOT use the confirmation logic
+            const printButton = document.createElement('button');
+            printButton.type = 'button';
+            printButton.className = `quick-button`;
+            printButton.style.backgroundColor = 'var(--color-secondary-accent)';
+            printButton.style.color = 'white';
+            printButton.style.borderColor = 'transparent';
+            printButton.innerHTML = `
+                <span>ðŸ–¨ï¸</span>
+                <span>Print Order</span>
+                <span style="color: white; font-weight: 700;">Tap to Print</span>
+            `;
+            printButton.onclick = () => printOrderSummary(); 
+            container.appendChild(printButton);
+
+
+            if (quickMenuProducts.length === 0) {
+                 container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 16px 0;">No quick items added yet. Click "Manage Menu" to add one.</div>';
+            }
+        }
+
+        // --- Manual Entry Logic ---
+        
+        function populateDatalist() {
+            const datalist = document.getElementById('default-products');
+            if (!datalist) return;
+
+            datalist.innerHTML = '';
+            quickMenuProducts.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                datalist.appendChild(option);
+            });
+        }
+        
+        function setupManualEntry() {
+            const form = document.getElementById('manual-entry-form');
+            const nameInput = document.getElementById('product-name');
+            const priceInput = document.getElementById('product-price');
+            
+            if (!form || !nameInput || !priceInput) return;
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const name = nameInput.value.trim();
+                let price = parseFloat(priceInput.value);
+
+                if (name && !isNaN(price) && price > 0) {
+                    const newItem = { name: name, price: parseFloat(price.toFixed(2)) };
+                    addItemToCart(newItem);
+                    
+                    nameInput.value = '';
+                    priceInput.value = '';
+                } else {
+                    showTemporaryMessage("Please ensure you enter a valid name and a price greater than 0.");
+                }
+            });
+        }
+
+        // --- Quick Menu Management Modal Logic ---
+        
+        function renderMenuManagementList() {
+            const listContainer = document.getElementById('current-menu-items-list');
+            if (!listContainer) return;
+
+            listContainer.innerHTML = '';
+            
+            if (quickMenuProducts.length === 0) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #888;">No items configured. Use the form above to add one.</p>';
+                return;
+            }
+
+            quickMenuProducts.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.style.display = 'flex';
+                itemDiv.style.justifyContent = 'space-between';
+                itemDiv.style.alignItems = 'center';
+                itemDiv.style.padding = '12px';
+                itemDiv.style.backgroundColor = '#f7f7f7';
+                itemDiv.style.borderRadius = '8px';
+                itemDiv.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05)';
+                
+                itemDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 20px;">${item.icon || 'ðŸ“¦'}</span>
+                        <div>
+                            <span style="font-weight: 600; color: var(--color-text-dark);">${item.name}</span>
+                            <span style="font-size: 12px; color: #888; display: block;">â‚¹${item.price.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button data-index="${index}" class="edit-item-btn" style="padding: 6px 10px; font-size: 12px; font-weight: 600; border-radius: 4px; color: white; background-color: #3b82f6;">Edit</button>
+                        <button data-index="${index}" class="delete-item-btn" style="padding: 6px 10px; font-size: 12px; font-weight: 600; border-radius: 4px; color: white; background-color: var(--color-error);">Delete</button>
+                    </div>
+                `;
+                listContainer.appendChild(itemDiv);
+            });
+            
+            listContainer.querySelectorAll('.edit-item-btn').forEach(btn => {
+                btn.onclick = (e) => startEditItem(parseInt(e.currentTarget.dataset.index));
+            });
+            listContainer.querySelectorAll('.delete-item-btn').forEach(btn => {
+                btn.onclick = (e) => deleteItem(parseInt(e.currentTarget.dataset.index));
+            });
+        }
+
+        function startEditItem(index) {
+            const item = quickMenuProducts[index];
+            const nameInput = document.getElementById('item-name');
+            const priceInput = document.getElementById('item-price');
+            const iconInput = document.getElementById('item-icon');
+            const indexInput = document.getElementById('item-index-to-edit');
+            const submitBtn = document.getElementById('form-submit-btn');
+
+            if (!item || !nameInput || !priceInput || !iconInput || !indexInput || !submitBtn) return;
+
+            indexInput.value = index;
+            nameInput.value = item.name;
+            priceInput.value = item.price.toFixed(2);
+            iconInput.value = item.icon || '';
+            
+            submitBtn.textContent = 'Update Item';
+            submitBtn.style.backgroundColor = '#f97316'; 
+        }
+
+        function resetForm() {
+            const form = document.getElementById('menu-item-form');
+            const indexInput = document.getElementById('item-index-to-edit');
+            const submitBtn = document.getElementById('form-submit-btn');
+
+            if (!form || !indexInput || !submitBtn) return;
+
+            form.reset();
+            indexInput.value = '';
+            submitBtn.textContent = 'Add New Item';
+            submitBtn.style.backgroundColor = 'var(--color-success)';
+        }
+
+        const menuForm = document.getElementById('menu-item-form');
+        if (menuForm) {
+            menuForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const indexStr = document.getElementById('item-index-to-edit').value;
+                const isEditing = indexStr !== '';
+                const index = parseInt(indexStr);
+
+                const name = document.getElementById('item-name').value.trim();
+                const price = parseFloat(document.getElementById('item-price').value);
+                const icon = document.getElementById('item-icon').value.trim() || 'ðŸ“¦';
+                
+                if (!name || isNaN(price) || price <= 0) {
+                    showTemporaryMessage("Invalid item details. Check name and price.");
+                    return;
+                }
+
+                const newItem = { name: name, price: parseFloat(price.toFixed(2)), icon: icon };
+                let updatedProducts = [...quickMenuProducts];
+
+                if (isEditing) {
+                    updatedProducts[index] = newItem;
+                } else {
+                    updatedProducts.push(newItem);
+                }
+
+                saveData(MENU_KEY, updatedProducts);
+                resetForm();
+                showTemporaryMessage(isEditing ? `Updated item: ${name}` : `Added new item: ${name}`);
+            });
+        }
+
+        function deleteItem(index) {
+            const itemToDelete = quickMenuProducts[index];
+            if (!itemToDelete) return;
+
+            if (window.confirm(`Are you sure you want to delete "${itemToDelete.name}"?`)) {
+                let updatedProducts = quickMenuProducts.filter((_, i) => i !== index);
+
+                saveData(MENU_KEY, updatedProducts);
+                showTemporaryMessage(`Deleted item: ${itemToDelete.name}`);
+                resetForm();
+            }
+        }
+
+        // --- Initialization ---
+
+        function initApp() {
+            // Load all data
+            quickMenuProducts = loadData(MENU_KEY, INITIAL_PRODUCT_DATA);
+            orderHistory = loadData(HISTORY_KEY, []);
+            currentCart = loadData(CART_KEY, { items: [], total: 0 });
+
+            // Setup Title Management
+            setupTitleManagement();
+
+            // Initial Renders
+            updateDateTime(); 
+            renderQuickButtons(); 
+            populateDatalist();
+            renderMenuManagementList();
+            renderCart(currentCart);
+
+            // Setup listeners
+            setupManualEntry();
+            setupHistoryModal();
+            
+            // BIND ACTION BUTTONS
+            document.getElementById('clear-order-button')?.addEventListener('click', completeAndClearOrder);
+            
+            // Setup Modal listeners
+            document.getElementById('manage-menu-btn')?.addEventListener('click', () => {
+                document.getElementById('manage-menu-modal')?.classList.remove('hidden');
+            });
+            document.getElementById('close-modal-btn')?.addEventListener('click', () => {
+                document.getElementById('manage-menu-modal')?.classList.add('hidden');
+                resetForm();
+            });
+        }
+
+        // CRITICAL FIX: Ensure JS runs ONLY after the DOM is fully ready.
+        initApp();
+
+    </script>
+
+</body>
+</html>
+
